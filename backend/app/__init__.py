@@ -1,0 +1,1 @@
+"""FinSight FastAPI backend."""

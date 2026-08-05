@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #f4f7f5;
+  --color-moss: #22c55e;
+  --color-forest: #0b0f0d;
+  --color-mint: #34d399;
+  --color-leaf: #4ade80;
+  --color-sand: #141a17;
+  --color-cream: #0a0c0b;
+  --color-stone: #2a332e;
+  --color-muted: #9ca3af;
+  --color-danger: #f87171;
+  --color-warn: #fbbf24;
+  --color-panel: #121816;
+  --color-card: #161d19;
+  --color-line: #243029;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: #050705;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.app-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(34, 197, 94, 0.14), transparent 55%),
+    #050705;
+}
+
+.auth-bg {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(34, 197, 94, 0.18), transparent 50%),
+    #050705;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: rise-in 0.55s ease-out both;
+}
+
+input[type="date"],
+input[type="number"],
+select {
+  color-scheme: dark;
+}
+
