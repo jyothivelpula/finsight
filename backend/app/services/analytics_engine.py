@@ -354,15 +354,30 @@ class AnalyticsEngine:
 
     def build_context_summary(self, year: int | None = None, month: int | None = None) -> dict:
         """Compact context for the AI layer — never raw DB rows."""
+        from datetime import date
+
+        today = date.today()
+        year = year or today.year
+        month = month or today.month
         dashboard = self.build_dashboard(year, month)
+        summary = dashboard.summary.model_dump(mode="json")
+        income = float(summary.get("total_income", 0) or 0)
+        expenses = float(summary.get("total_expenses", 0) or 0)
         return {
-            "summary": dashboard.summary.model_dump(mode="json"),
+            "period": {
+                "year": year,
+                "month": month,
+                "label": date(year, month, 1).strftime("%B %Y"),
+            },
+            "summary": summary,
+            "remaining_balance": income - expenses,
             "top_expense_categories": [
                 c.model_dump(mode="json") for c in dashboard.expense_by_category[:5]
             ],
             "income_sources": [
                 c.model_dump(mode="json") for c in dashboard.income_by_source[:5]
             ],
+            "budgets": [b.model_dump(mode="json") for b in dashboard.budget_analytics],
             "budget_alerts": [
                 b.model_dump(mode="json")
                 for b in dashboard.budget_analytics

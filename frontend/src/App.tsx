@@ -10,8 +10,10 @@ import ExpensesPage from "./pages/ExpensesPage";
 import GoalsPage from "./pages/GoalsPage";
 import IncomePage from "./pages/IncomePage";
 import Auth from "./pages/Auth";
+import HelpPage from "./pages/HelpPage";
 import Landing from "./pages/Landing";
 import ReportsPage from "./pages/ReportsPage";
+import SettingsPage from "./pages/SettingsPage";
 import { bootstrapAuth } from "./store/authSlice";
 import { useAppDispatch } from "./store";
 
@@ -38,6 +40,8 @@ export default function App() {
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="ai" element={<AIPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="help" element={<HelpPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

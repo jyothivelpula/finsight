@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import BrandLogo from "../components/BrandLogo";
 import { clearError, login, register } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store";
 
@@ -48,10 +49,8 @@ export default function Auth() {
   return (
     <div className="auth-bg flex min-h-screen flex-col items-center justify-center px-4 py-10">
       <div className="mb-8 flex flex-col items-center text-center animate-rise">
-        <div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-moss text-xl font-bold text-black shadow-[0_0_40px_rgba(34,197,94,0.35)]">
-          F
-        </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
+        <BrandLogo className="mb-5" imgClassName="h-12 w-auto max-w-[240px]" />
+        <h1 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">
           Welcome to FinSight
         </h1>
         <p className="mt-2 text-sm text-muted md:text-base">
@@ -59,13 +58,13 @@ export default function Auth() {
         </p>
       </div>
 
-      <div className="w-full max-w-[420px] animate-rise-delay rounded-2xl border border-line bg-card p-5 shadow-2xl sm:p-6">
+      <div className="card-shadow w-full max-w-[420px] animate-rise rounded-2xl border border-line bg-card p-5 sm:p-6">
         <div className="mb-6 grid grid-cols-2 rounded-xl bg-sand p-1">
           <button
             type="button"
             onClick={() => switchMode("signin")}
             className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-              !isRegister ? "bg-[#1c2520] text-white shadow-sm" : "text-muted hover:text-white"
+              !isRegister ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
             Sign in
@@ -74,7 +73,7 @@ export default function Auth() {
             type="button"
             onClick={() => switchMode("register")}
             className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-              isRegister ? "bg-[#1c2520] text-white shadow-sm" : "text-muted hover:text-white"
+              isRegister ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
             Create account
@@ -84,38 +83,38 @@ export default function Auth() {
         <form onSubmit={onSubmit} className="space-y-4">
           {isRegister ? (
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-white/90">Full name</span>
+              <span className="text-sm font-medium text-ink">Full name</span>
               <input
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-xl border border-line bg-[#0d1210] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-muted/60 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
+                className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
                 placeholder="Your name"
               />
             </label>
           ) : null}
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-white/90">Email</span>
+            <span className="text-sm font-medium text-ink">Email</span>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-line bg-[#0d1210] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-muted/60 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
+              className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
               placeholder="you@email.com"
             />
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-white/90">Password</span>
+            <span className="text-sm font-medium text-ink">Password</span>
             <input
               type="password"
               required
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-line bg-[#0d1210] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-muted/60 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
+              className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
               placeholder="••••••••"
             />
           </label>
@@ -125,7 +124,7 @@ export default function Auth() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-moss py-3 text-sm font-semibold text-black transition hover:bg-leaf disabled:opacity-60"
+            className="w-full rounded-xl bg-moss py-3 text-sm font-semibold text-white transition hover:bg-leaf disabled:opacity-60"
           >
             {loading ? "Please wait…" : title}
           </button>
@@ -142,7 +141,7 @@ export default function Auth() {
           onClick={() =>
             setGoogleNote("Google sign-in will be available soon. Use email for now.")
           }
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-transparent py-3 text-sm font-medium text-white transition hover:bg-white/5"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-transparent py-3 text-sm font-medium text-ink transition hover:bg-sand"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
             <path

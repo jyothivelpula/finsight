@@ -20,9 +20,10 @@ async def ask_assistant(
     current_user: User = Depends(get_current_active_user),
 ) -> AIChatResponse:
     """
-    Production workflow:
-    User question → Analytics Engine → Context Builder → LLM (or rule fallback).
-    The AI layer never reads the database; it only consumes verified analytics context.
+    FinSight AI flow:
+    Natural Conversation (greetings/context) OR Financial Intent
+    (income/expenses/budget/savings/goals/analytics)
+    → Financial Engine → User DB → AI Response → Suggested Actions.
     """
     engine = FinancialIntelligenceEngine(db, current_user.id)
     history = [{"role": m.role, "content": m.content} for m in payload.history]

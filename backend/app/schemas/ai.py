@@ -8,11 +8,11 @@ class ChatMessage(BaseModel):
 
 class AIChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
-    # Recent turns for correction detection only — never a source of money amounts.
     history: list[ChatMessage] = Field(default_factory=list, max_length=12)
 
 
 class AIChatResponse(BaseModel):
     answer: str
-    insights: list[str]
-    context_summary: dict
+    insights: list[str] = Field(default_factory=list)
+    suggested_actions: list[str] = Field(default_factory=list)
+    context_summary: dict = Field(default_factory=dict)

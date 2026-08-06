@@ -14,10 +14,11 @@ import {
 } from "recharts";
 import { analyticsApi } from "../api/finsight";
 import { PageHeader, Panel, Stat } from "../components/ui";
+import { onDataChanged } from "../lib/events";
 import { currentYearMonth, money, pct } from "../lib/format";
 import type { AnalyticsDashboard } from "../types";
 
-const COLORS = ["#1f4d3a", "#3d9b74", "#6fbf98", "#c7913b", "#c45c4a", "#5e6b66", "#16382c"];
+const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4", "#a855f7", "#f97316"];
 
 export default function AnalyticsPage() {
   const { year, month } = currentYearMonth();
@@ -26,6 +27,13 @@ export default function AnalyticsPage() {
   useEffect(() => {
     analyticsApi.dashboard(year, month).then(setData);
   }, [year, month]);
+
+  useEffect(
+    () => onDataChanged(() => {
+      analyticsApi.dashboard(year, month).then(setData);
+    }),
+    [year, month],
+  );
 
   if (!data) return <p className="text-muted">Loading analytics…</p>;
 
@@ -54,7 +62,7 @@ export default function AnalyticsPage() {
 
       <div className="mt-6 grid gap-4 xl:grid-cols-2">
         <Panel>
-          <h2 className="text-2xl font-semibold tracking-tight text-white">Expense Distribution</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-ink">Expense Distribution</h2>
           <div className="mt-4 h-72">
             {expensePie.length ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -75,16 +83,16 @@ export default function AnalyticsPage() {
         </Panel>
 
         <Panel>
-          <h2 className="text-2xl font-semibold tracking-tight text-white">Income by Source</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-ink">Income by Source</h2>
           <div className="mt-4 h-72">
             {incomeBars.length ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={incomeBars}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#d9d2c5" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
+                  <YAxis stroke="#94a3b8" fontSize={12} />
                   <Tooltip formatter={(v) => money(Number(v))} />
-                  <Bar dataKey="amount" fill="#1f4d3a" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="amount" fill="#6366f1" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -96,7 +104,7 @@ export default function AnalyticsPage() {
 
       <div className="mt-6 grid gap-4 xl:grid-cols-2">
         <Panel>
-          <h2 className="text-2xl font-semibold tracking-tight text-white">Budget Analytics</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-ink">Budget Analytics</h2>
           <ul className="mt-4 space-y-3">
             {data.budget_analytics.length ? (
               data.budget_analytics.map((b) => (
@@ -117,7 +125,7 @@ export default function AnalyticsPage() {
         </Panel>
 
         <Panel>
-          <h2 className="text-2xl font-semibold tracking-tight text-white">Health Score Breakdown</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-ink">Health Score Breakdown</h2>
           <ul className="mt-4 space-y-3">
             {Object.entries(data.health_breakdown).map(([key, value]) => (
               <li key={key}>

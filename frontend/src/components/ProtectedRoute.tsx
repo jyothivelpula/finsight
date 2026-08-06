@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
+import BrandLogo from "./BrandLogo";
 import { useAppSelector } from "../store";
 
 export default function ProtectedRoute() {
@@ -8,9 +9,7 @@ export default function ProtectedRoute() {
     return (
       <div className="auth-bg grid min-h-screen place-items-center">
         <div className="text-center">
-          <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-moss text-lg font-bold text-black">
-            F
-          </div>
+          <BrandLogo className="mx-auto mb-4" imgClassName="h-10 w-auto max-w-[200px]" />
           <p className="text-lg text-muted">Loading FinSight…</p>
         </div>
       </div>

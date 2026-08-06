@@ -116,6 +116,7 @@ export interface AnalyticsDashboard {
 export interface AIChatResponse {
   answer: string;
   insights: string[];
+  suggested_actions?: string[];
   context_summary: Record<string, unknown>;
 }
 

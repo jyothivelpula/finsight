@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Plus, Search, Trash2, X } from "lucide-react";
 import { financeApi } from "../api/finsight";
+import { onDataChanged } from "../lib/events";
 import { currentYearMonth, money, todayISO } from "../lib/format";
 import type { Income } from "../types";
 
@@ -49,6 +50,10 @@ export default function IncomePage() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => onDataChanged(() => {
+    load();
+  }), []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -108,13 +113,13 @@ export default function IncomePage() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-4xl font-semibold tracking-tight text-white">Income</h1>
+          <h1 className="text-4xl font-semibold tracking-tight text-ink">Income</h1>
           <p className="mt-2 text-sm text-muted">Every rupee that comes in, by source.</p>
         </div>
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-moss px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-leaf"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-moss px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-leaf"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
           Add income
@@ -126,17 +131,17 @@ export default function IncomePage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
             {MONTH_LABELS[month - 1]} {year} TOTAL
           </p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-leaf">{money(monthTotal)}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-emerald-600">{money(monthTotal)}</p>
         </div>
         <div className="rounded-2xl border border-line bg-card px-5 py-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
             All-time total
           </p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-white">{money(allTimeTotal)}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-ink">{money(allTimeTotal)}</p>
         </div>
         <div className="rounded-2xl border border-line bg-card px-5 py-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Records</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-white">{items.length}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-ink">{items.length}</p>
         </div>
       </div>
 
@@ -147,13 +152,13 @@ export default function IncomePage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search incomes..."
-            className="w-full rounded-xl border border-line bg-card py-3 pl-10 pr-3 text-sm text-white outline-none placeholder:text-muted/70 focus:border-moss/50 focus:ring-2 focus:ring-moss/20"
+            className="w-full rounded-xl border border-line bg-card py-3 pl-10 pr-3 text-sm text-ink outline-none placeholder:text-muted/70 focus:border-moss/50 focus:ring-2 focus:ring-moss/20"
           />
         </label>
         <select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value)}
-          className="rounded-xl border border-line bg-card px-4 py-3 text-sm text-white outline-none focus:border-moss/50 focus:ring-2 focus:ring-moss/20 sm:min-w-[180px]"
+          className="rounded-xl border border-line bg-card px-4 py-3 text-sm text-ink outline-none focus:border-moss/50 focus:ring-2 focus:ring-moss/20 sm:min-w-[180px]"
         >
           <option value="all">All sources</option>
           {SOURCES.map((s) => (
@@ -167,7 +172,7 @@ export default function IncomePage() {
       <div className="mt-5 min-h-[320px] rounded-2xl border border-line bg-card">
         {filtered.length === 0 ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center px-6 py-16 text-center">
-            <p className="text-xl font-semibold text-white">No income records</p>
+            <p className="text-xl font-semibold text-ink">No income records</p>
             <p className="mt-2 max-w-sm text-sm text-muted">
               Add your first income to start building your financial picture.
             </p>
@@ -188,9 +193,9 @@ export default function IncomePage() {
                 {filtered.map((item) => (
                   <tr key={item.id} className="border-b border-line/70 last:border-0">
                     <td className="px-5 py-4 text-muted">{item.income_date}</td>
-                    <td className="px-5 py-4 font-medium text-white">{item.source}</td>
+                    <td className="px-5 py-4 font-medium text-ink">{item.source}</td>
                     <td className="px-5 py-4 text-muted">{item.description || "—"}</td>
-                    <td className="px-5 py-4 text-right font-semibold text-leaf">
+                    <td className="px-5 py-4 text-right font-semibold text-emerald-600">
                       {money(item.amount)}
                     </td>
                     <td className="px-5 py-4 text-right">
@@ -216,24 +221,24 @@ export default function IncomePage() {
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
-          <div className="w-full max-w-md rounded-2xl border border-line bg-[#111816] p-5 shadow-2xl sm:p-6">
+          <div className="w-full max-w-md rounded-2xl border border-line bg-white p-5 shadow-2xl sm:p-6">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">Add income</h2>
+              <h2 className="text-xl font-semibold text-ink">Add income</h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-2 text-muted hover:bg-white/5 hover:text-white"
+                className="rounded-lg p-2 text-muted hover:bg-sand hover:text-ink"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <form onSubmit={onSubmit} className="space-y-4">
               <label className="block space-y-2">
-                <span className="text-sm text-white/85">Source</span>
+                <span className="text-sm text-ink">Source</span>
                 <select
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-[#0d1210] px-3 py-3 text-sm text-white outline-none focus:border-moss/50"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-3 text-sm text-ink outline-none focus:border-moss/50"
                 >
                   {SOURCES.map((s) => (
                     <option key={s}>{s}</option>
@@ -241,40 +246,40 @@ export default function IncomePage() {
                 </select>
               </label>
               <label className="block space-y-2">
-                <span className="text-sm text-white/85">Amount (₹)</span>
+                <span className="text-sm text-ink">Amount (₹)</span>
                 <input
                   type="number"
                   min="1"
                   required
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-[#0d1210] px-3 py-3 text-sm text-white outline-none focus:border-moss/50"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-3 text-sm text-ink outline-none focus:border-moss/50"
                   placeholder="0"
                 />
               </label>
               <label className="block space-y-2">
-                <span className="text-sm text-white/85">Date</span>
+                <span className="text-sm text-ink">Date</span>
                 <input
                   type="date"
                   required
                   value={incomeDate}
                   onChange={(e) => setIncomeDate(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-[#0d1210] px-3 py-3 text-sm text-white outline-none focus:border-moss/50"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-3 text-sm text-ink outline-none focus:border-moss/50"
                 />
               </label>
               <label className="block space-y-2">
-                <span className="text-sm text-white/85">Description</span>
+                <span className="text-sm text-ink">Description</span>
                 <input
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-[#0d1210] px-3 py-3 text-sm text-white outline-none focus:border-moss/50"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-3 text-sm text-ink outline-none focus:border-moss/50"
                   placeholder="Optional"
                 />
               </label>
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full rounded-full bg-moss py-3 text-sm font-semibold text-black transition hover:bg-leaf disabled:opacity-60"
+                className="w-full rounded-full bg-moss py-3 text-sm font-semibold text-white transition hover:bg-leaf disabled:opacity-60"
               >
                 {saving ? "Saving…" : "Save income"}
               </button>

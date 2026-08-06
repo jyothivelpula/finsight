@@ -90,7 +90,7 @@ export default function GoalsPage() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-4xl font-semibold tracking-tight text-white">Goals</h1>
+          <h1 className="text-4xl font-semibold tracking-tight text-ink">Goals</h1>
           <p className="mt-2 text-sm text-muted">
             Save with purpose — emergency fund, vacation, and more.
           </p>
@@ -98,7 +98,7 @@ export default function GoalsPage() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-moss px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-leaf"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-moss px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-leaf"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
           Add goal
@@ -110,19 +110,19 @@ export default function GoalsPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
             Total saved
           </p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-leaf">{money(totalSaved)}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-moss">{money(totalSaved)}</p>
         </div>
         <div className="rounded-2xl border border-line bg-card px-5 py-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
             Target total
           </p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-white">{money(totalTarget)}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-ink">{money(totalTarget)}</p>
         </div>
         <div className="rounded-2xl border border-line bg-card px-5 py-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
             Avg. progress
           </p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-white">
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-ink">
             {avgProgress.toFixed(0)}%
           </p>
         </div>
@@ -135,13 +135,13 @@ export default function GoalsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search goals..."
-            className="w-full rounded-xl border border-line bg-card py-3 pl-10 pr-3 text-sm text-white outline-none placeholder:text-muted/70 focus:border-moss/50 focus:ring-2 focus:ring-moss/20"
+            className="w-full rounded-xl border border-line bg-card py-3 pl-10 pr-3 text-sm text-ink outline-none placeholder:text-muted/70 focus:border-moss/50 focus:ring-2 focus:ring-moss/20"
           />
         </label>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-line bg-card px-4 py-3 text-sm text-white outline-none focus:border-moss/50 focus:ring-2 focus:ring-moss/20 sm:min-w-[180px]"
+          className="rounded-xl border border-line bg-card px-4 py-3 text-sm text-ink outline-none focus:border-moss/50 focus:ring-2 focus:ring-moss/20 sm:min-w-[180px]"
         >
           <option value="all">All statuses</option>
           <option value="active">Active</option>
@@ -153,7 +153,7 @@ export default function GoalsPage() {
       <div className="mt-5 min-h-[320px] rounded-2xl border border-line bg-card">
         {filtered.length === 0 ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center px-6 py-16 text-center">
-            <p className="text-xl font-semibold text-white">No goal records</p>
+            <p className="text-xl font-semibold text-ink">No goal records</p>
             <p className="mt-2 max-w-sm text-sm text-muted">
               Add your first savings goal to start building toward what matters.
             </p>
@@ -165,7 +165,7 @@ export default function GoalsPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-3">
-                      <p className="font-semibold text-white">{g.name}</p>
+                      <p className="font-semibold text-ink">{g.name}</p>
                       <StatusPill status={g.status} />
                     </div>
                     <p className="mt-1 text-sm text-muted">
@@ -188,7 +188,7 @@ export default function GoalsPage() {
                         setAddOpen(g);
                         setAddAmount("1000");
                       }}
-                      className="rounded-full border border-line px-4 py-2 text-sm font-medium text-white hover:bg-white/5"
+                      className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-sand"
                     >
                       Add savings
                     </button>
@@ -213,62 +213,62 @@ export default function GoalsPage() {
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
-          <div className="w-full max-w-md rounded-2xl border border-line bg-[#111816] p-5 shadow-2xl sm:p-6">
+          <div className="w-full max-w-md rounded-2xl border border-line bg-white p-5 shadow-2xl sm:p-6">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">Add goal</h2>
+              <h2 className="text-xl font-semibold text-ink">Add goal</h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-2 text-muted hover:bg-white/5 hover:text-white"
+                className="rounded-lg p-2 text-muted hover:bg-sand hover:text-ink"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <form onSubmit={onSubmit} className="space-y-4">
               <label className="block space-y-2">
-                <span className="text-sm text-white/85">Goal name</span>
+                <span className="text-sm text-ink">Goal name</span>
                 <input
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Emergency Fund"
-                  className="w-full rounded-xl border border-line bg-[#0d1210] px-3 py-3 text-sm text-white outline-none focus:border-moss/50"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-3 text-sm text-ink outline-none focus:border-moss/50"
                 />
               </label>
               <label className="block space-y-2">
-                <span className="text-sm text-white/85">Target amount (₹)</span>
+                <span className="text-sm text-ink">Target amount (₹)</span>
                 <input
                   type="number"
                   min="1"
                   required
                   value={target}
                   onChange={(e) => setTarget(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-[#0d1210] px-3 py-3 text-sm text-white outline-none focus:border-moss/50"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-3 text-sm text-ink outline-none focus:border-moss/50"
                 />
               </label>
               <label className="block space-y-2">
-                <span className="text-sm text-white/85">Current amount (₹)</span>
+                <span className="text-sm text-ink">Current amount (₹)</span>
                 <input
                   type="number"
                   min="0"
                   value={current}
                   onChange={(e) => setCurrent(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-[#0d1210] px-3 py-3 text-sm text-white outline-none focus:border-moss/50"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-3 text-sm text-ink outline-none focus:border-moss/50"
                 />
               </label>
               <label className="block space-y-2">
-                <span className="text-sm text-white/85">Target date</span>
+                <span className="text-sm text-ink">Target date</span>
                 <input
                   type="date"
                   value={targetDate}
                   onChange={(e) => setTargetDate(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-[#0d1210] px-3 py-3 text-sm text-white outline-none focus:border-moss/50"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-3 text-sm text-ink outline-none focus:border-moss/50"
                 />
               </label>
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full rounded-full bg-moss py-3 text-sm font-semibold text-black transition hover:bg-leaf disabled:opacity-60"
+                className="w-full rounded-full bg-moss py-3 text-sm font-semibold text-white transition hover:bg-leaf disabled:opacity-60"
               >
                 {saving ? "Saving…" : "Save goal"}
               </button>
@@ -279,32 +279,32 @@ export default function GoalsPage() {
 
       {addOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
-          <div className="w-full max-w-sm rounded-2xl border border-line bg-[#111816] p-5 shadow-2xl">
+          <div className="w-full max-w-sm rounded-2xl border border-line bg-white p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Add to {addOpen.name}</h2>
+              <h2 className="text-lg font-semibold text-ink">Add to {addOpen.name}</h2>
               <button
                 type="button"
                 onClick={() => setAddOpen(null)}
-                className="rounded-lg p-2 text-muted hover:bg-white/5 hover:text-white"
+                className="rounded-lg p-2 text-muted hover:bg-sand hover:text-ink"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <form onSubmit={onAddSavings} className="space-y-4">
               <label className="block space-y-2">
-                <span className="text-sm text-white/85">Amount (₹)</span>
+                <span className="text-sm text-ink">Amount (₹)</span>
                 <input
                   type="number"
                   min="1"
                   required
                   value={addAmount}
                   onChange={(e) => setAddAmount(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-[#0d1210] px-3 py-3 text-sm text-white outline-none focus:border-moss/50"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-3 text-sm text-ink outline-none focus:border-moss/50"
                 />
               </label>
               <button
                 type="submit"
-                className="w-full rounded-full bg-moss py-3 text-sm font-semibold text-black transition hover:bg-leaf"
+                className="w-full rounded-full bg-moss py-3 text-sm font-semibold text-white transition hover:bg-leaf"
               >
                 Add savings
               </button>
