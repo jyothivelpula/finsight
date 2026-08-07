@@ -205,3 +205,52 @@ def test_answer_prefers_llm_when_available():
     result = asyncio.run(_run())
     assert result["answer"] == "LLM personalized advice."
     assert result["suggested_actions"]
+
+
+def test_chat_records_expense_and_skips_hypothetical():
+    from types import SimpleNamespace
+
+    engine = _engine_with_context()
+    engine.db = MagicMock()
+    food = SimpleNamespace(id=1, name="Food")
+    other = SimpleNamespace(id=2, name="Other")
+    engine.db.query.return_value.filter.return_value.all.return_value = [food, other]
+
+    def _add(obj):
+        obj.id = 42
+
+    engine.db.add.side_effect = _add
+
+    recorded = engine.try_record_transaction("I spent 750 on food yesterday")
+    assert recorded is not None
+    assert recorded["kind"] == "expense"
+    assert recorded["amount"] == 750.0
+    assert recorded["label"] == "Food"
+
+    assert engine.try_record_transaction("What if I spend 3000 on shopping?") is None
+    assert engine.try_record_transaction("Where did I spend the most?") is None
+
+
+def test_answer_includes_recorded_transaction_note():
+    engine = _engine_with_context()
+
+    async def _run():
+        with (
+            patch.object(
+                engine,
+                "try_record_transaction",
+                return_value={
+                    "kind": "expense",
+                    "id": 1,
+                    "amount": 500,
+                    "label": "Food",
+                    "date": "2026-08-07",
+                },
+            ),
+            patch.object(engine, "ask_llm", return_value="Food is now a notable category."),
+        ):
+            return await engine.answer("I spent 500 on food")
+
+    result = asyncio.run(_run())
+    assert "Logged expense" in result["answer"]
+    assert result["context_summary"]["recorded_transaction"]["kind"] == "expense"

@@ -26,14 +26,36 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date
+from decimal import Decimal
 from enum import Enum
 
 import httpx
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.models.category import Category
+from app.models.expense import Expense
+from app.models.income import Income
 from app.services.analytics_engine import AnalyticsEngine
-from app.services.message_parser import StatementKind, parse_user_message
+from app.services.message_parser import (
+    StatementKind,
+    extract_context_from_history,
+    parse_user_message,
+)
+
+# Map chat keywords → default expense category names
+_CATEGORY_KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
+    ("Food", ("food", "lunch", "dinner", "breakfast", "grocery", "groceries", "restaurant", "cafe", "snacks")),
+    ("Rent", ("rent", "house rent", "apartment")),
+    ("Utilities", ("utility", "utilities", "electricity", "water bill", "internet", "wifi", "gas bill")),
+    ("Shopping", ("shopping", "amazon", "clothes", "clothing", "flipkart")),
+    ("Medical", ("medical", "doctor", "hospital", "medicine", "pharmacy", "health")),
+    ("Education", ("education", "tuition", "school", "college", "course", "fees")),
+    ("Entertainment", ("entertainment", "movie", "netflix", "spotify", "game")),
+    ("Transportation", ("transport", "uber", "ola", "metro", "bus", "auto", "cab", "petrol", "fuel", "diesel")),
+    ("Travel", ("travel", "flight", "hotel", "trip", "train")),
+]
 
 
 class ConversationPath(str, Enum):
@@ -264,12 +286,33 @@ class FinancialIntelligenceEngine:
                 unique.append(a)
         return unique[:4]
 
-    def build_finance_prompt(self, question: str, domain: IntentDomain, context: dict) -> str:
+    def build_finance_prompt(
+        self,
+        question: str,
+        domain: IntentDomain,
+        context: dict,
+        session_hints: dict | None = None,
+        recorded: dict | None = None,
+    ) -> str:
         period = (context.get("period") or {}).get("label") or "current month"
         snapshot = self._situation_snapshot_lines(context)
+        extras: list[str] = []
+        if recorded:
+            extras.append(
+                f"Just recorded from this chat: {recorded.get('kind')} "
+                f"{self._inr(recorded.get('amount', 0))} "
+                f"({recorded.get('label')}). Confirm briefly that it was saved."
+            )
+        if session_hints:
+            if session_hints.get("user_income") is not None:
+                extras.append(f"User earlier stated income ≈ {self._inr(session_hints['user_income'])}")
+            if session_hints.get("last_expense") is not None:
+                extras.append(f"User earlier stated a spend ≈ {self._inr(session_hints['last_expense'])}")
+        extra_block = ("\n".join(extras) + "\n\n") if extras else ""
         return (
             f"Detected financial intent domain: {domain.value}\n"
             f"Period: {period} (user's CURRENT statistics)\n\n"
+            f"{extra_block}"
             "Quick snapshot (verified):\n"
             + "\n".join(f"- {line}" for line in snapshot)
             + "\n\nFull financial context JSON from the user's database:\n"
@@ -279,6 +322,127 @@ class FinancialIntelligenceEngine:
             "If they ask about their situation overall, summarize the snapshot clearly. "
             "Do not claim you lack access to their expenses or budgets — the JSON above is live."
         )
+
+    def _resolve_expense_category(self, text: str) -> Category:
+        lower = text.lower()
+        cats = (
+            self.db.query(Category)
+            .filter(Category.user_id == self.user_id, Category.type == "expense")
+            .all()
+        )
+        by_name = {c.name.lower(): c for c in cats}
+
+        for cat_name, keywords in _CATEGORY_KEYWORDS:
+            if any(k in lower for k in keywords):
+                found = by_name.get(cat_name.lower())
+                if found:
+                    return found
+
+        for cat in cats:
+            if cat.name.lower() in lower:
+                return cat
+
+        other = by_name.get("other")
+        if other:
+            return other
+        if cats:
+            return cats[0]
+
+        # Create Other if user has no categories
+        created = Category(
+            user_id=self.user_id,
+            name="Other",
+            type="expense",
+            is_default=True,
+        )
+        self.db.add(created)
+        self.db.commit()
+        self.db.refresh(created)
+        return created
+
+    def _guess_income_source(self, text: str) -> str:
+        lower = text.lower()
+        if "freelance" in lower or "client" in lower:
+            return "Freelance"
+        if "business" in lower:
+            return "Business"
+        if "salary" in lower or "paycheck" in lower or "wage" in lower:
+            return "Salary"
+        if "bonus" in lower:
+            return "Bonus"
+        return "Other"
+
+    def try_record_transaction(self, question: str, history: list[dict] | None = None) -> dict | None:
+        """
+        Auto-save clear income/expense statements from chat.
+        Skips hypothetical/planned spends. Returns a summary dict when saved.
+        """
+        if self.db is None:
+            return None
+        parsed = parse_user_message(question, history)
+        today = date.today()
+        desc = question.strip()[:240]
+
+        # Confirmed expense statements (not "what if" / "planning to")
+        if parsed.kind in {
+            StatementKind.EXPENSE_STATEMENT,
+            StatementKind.REMAINING_AFTER_EXPENSE,
+        } and parsed.expense_amount and float(parsed.expense_amount) > 0:
+            amount = Decimal(str(parsed.expense_amount)).quantize(Decimal("0.01"))
+            category = self._resolve_expense_category(question)
+            row = Expense(
+                user_id=self.user_id,
+                category_id=category.id,
+                amount=amount,
+                description=desc,
+                merchant=None,
+                expense_date=today,
+            )
+            self.db.add(row)
+            self.db.commit()
+            self.db.refresh(row)
+            return {
+                "kind": "expense",
+                "id": row.id,
+                "amount": float(amount),
+                "label": category.name,
+                "date": today.isoformat(),
+            }
+
+        if (
+            parsed.kind == StatementKind.INCOME_STATEMENT
+            and parsed.income_amount
+            and float(parsed.income_amount) > 0
+        ):
+            amount = Decimal(str(parsed.income_amount)).quantize(Decimal("0.01"))
+            source = self._guess_income_source(question)
+            row = Income(
+                user_id=self.user_id,
+                source=source,
+                amount=amount,
+                description=desc,
+                income_date=today,
+            )
+            self.db.add(row)
+            self.db.commit()
+            self.db.refresh(row)
+            return {
+                "kind": "income",
+                "id": row.id,
+                "amount": float(amount),
+                "label": source,
+                "date": today.isoformat(),
+            }
+
+        return None
+
+    def _recorded_prefix(self, recorded: dict) -> str:
+        kind = recorded.get("kind")
+        amount = self._inr(recorded.get("amount", 0))
+        label = recorded.get("label") or "Other"
+        if kind == "expense":
+            return f"Logged expense: {amount} under {label}."
+        return f"Logged income: {amount} from {label}."
 
     def _situation_snapshot_lines(self, context: dict) -> list[str]:
         summary = context.get("summary") or {}
@@ -536,14 +700,33 @@ class FinancialIntelligenceEngine:
         month: int | None = None,
         history: list[dict] | None = None,
     ) -> dict:
-        path, domain = self.classify(question, history)
+        history = history or []
+        # Sanitize history for LLM (drop empty / ultra-long welcomes)
+        clean_history = [
+            {"role": m.get("role"), "content": str(m.get("content", "")).strip()[:500]}
+            for m in history
+            if m.get("role") in {"user", "assistant"} and str(m.get("content", "")).strip()
+        ][-10:]
+
+        # Auto-log clear income/expense statements before answering
+        recorded = self.try_record_transaction(question, clean_history)
+
+        path, domain = self.classify(question, clean_history)
+        # Recording always uses the financial path for a useful reply
+        if recorded:
+            path = ConversationPath.FINANCIAL
+            domain = (
+                IntentDomain.INCOME
+                if recorded.get("kind") == "income"
+                else IntentDomain.EXPENSES
+            )
 
         # Pure greetings stay natural; everything financial uses current DB stats
-        if path == ConversationPath.NATURAL:
+        if path == ConversationPath.NATURAL and not recorded:
             llm = await self.ask_llm(
                 NATURAL_SYSTEM_PROMPT,
                 question,
-                history=history,
+                history=clean_history,
                 temperature=0.8,
             )
             answer = llm or self.natural_fallback(domain, question)
@@ -566,16 +749,42 @@ class FinancialIntelligenceEngine:
             }
 
         # Financial Intent → current statistics from User DB → AI Response
+        # Rebuild context AFTER any chat-driven write so totals include it.
         context = self.analytics.build_context_summary(year, month)
-        prompt = self.build_finance_prompt(question, domain, context)
+        session_hints = extract_context_from_history(clean_history)
+        prompt = self.build_finance_prompt(
+            question,
+            domain,
+            context,
+            session_hints=session_hints,
+            recorded=recorded,
+        )
         llm = await self.ask_llm(
             FINANCE_SYSTEM_PROMPT,
             prompt,
-            history=history,
+            history=clean_history,
             temperature=0.5,
         )
         answer = llm or self.rule_based_answer(question, domain, context)
+        if recorded:
+            prefix = self._recorded_prefix(recorded)
+            if prefix.lower() not in answer.lower():
+                answer = f"{prefix}\n\n{answer}"
         actions = self.suggested_actions(path, domain, context)
+        if recorded:
+            actions = [
+                "How am I doing financially this month?",
+                "Where did I spend the most?",
+                *actions,
+            ]
+            # de-dupe
+            seen: set[str] = set()
+            unique: list[str] = []
+            for a in actions:
+                if a not in seen:
+                    seen.add(a)
+                    unique.append(a)
+            actions = unique[:4]
 
         return {
             "answer": answer,
@@ -600,5 +809,6 @@ class FinancialIntelligenceEngine:
                 "budget_alerts": context.get("budget_alerts", []),
                 "goal_progress": context.get("goal_progress", []),
                 "insights": context.get("insights", []),
+                "recorded_transaction": recorded,
             },
         }
