@@ -47,12 +47,18 @@ SAMPLE_CONTEXT = {
         "Current savings rate is 36.0%.",
     ],
     "health_breakdown": {
-        "savings_rate": 18,
-        "budget_discipline": 10,
-        "expense_ratio": 16,
-        "goal_progress": 14,
-        "spending_stability": 14,
+        "spending_score": 16,
+        "savings_score": 18,
+        "budget_score": 10,
+        "goals_score": 14,
     },
+    "health_score": 72,
+    "health_status": "Good",
+    "spending_score": 16,
+    "savings_score": 18,
+    "budget_score": 10,
+    "goals_score": 14,
+    "health_has_data": True,
 }
 
 
@@ -151,7 +157,7 @@ def test_rule_based_health_score():
         SAMPLE_CONTEXT,
     )
     assert "72" in reply
-    assert "budget discipline" in reply.lower()
+    assert "budget score" in reply.lower() or "spending score" in reply.lower()
 
 
 def test_rule_based_savings_tip():

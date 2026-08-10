@@ -457,7 +457,8 @@ class FinancialIntelligenceEngine:
             f"Savings / remaining: {self._inr(remaining)}",
             f"Savings rate: {float(summary.get('savings_rate', 0) or 0):.1f}%",
             f"Budget usage: {float(summary.get('budget_usage', 0) or 0):.1f}%",
-            f"Financial health score: {summary.get('financial_health_score', 0)}/100",
+            f"Financial health score: {context.get('health_score', summary.get('financial_health_score', 0))}/100"
+            f" ({context.get('health_status', 'n/a')})",
         ]
         top = (context.get("top_expense_categories") or [])[:1]
         if top:
@@ -508,18 +509,26 @@ class FinancialIntelligenceEngine:
         )
 
         if domain == IntentDomain.ANALYTICS and asks_health and not wants_situation:
-            score = summary.get("financial_health_score", 0)
+            score = context.get("health_score", summary.get("financial_health_score", 0))
+            status = context.get("health_status") or "n/a"
             lines = [
-                f"Your financial health score is {score}/100 for {period}.",
+                f"Your financial health score is {score}/100 ({status}) for {period}.",
                 f"Income {self._inr(summary.get('total_income', 0))}, "
                 f"expenses {self._inr(summary.get('total_expenses', 0))}, "
                 f"savings {self._inr(remaining)}.",
             ]
-            if health:
-                weakest = min(health, key=health.get)
+            primary = {
+                "spending_score": context.get("spending_score", health.get("spending_score")),
+                "savings_score": context.get("savings_score", health.get("savings_score")),
+                "budget_score": context.get("budget_score", health.get("budget_score")),
+                "goals_score": context.get("goals_score", health.get("goals_score")),
+            }
+            primary = {k: v for k, v in primary.items() if v is not None}
+            if primary:
+                weakest = min(primary, key=primary.get)
                 lines.append(f"The weakest area is {weakest.replace('_', ' ')}.")
-                lines.append("Score breakdown:")
-                for key, value in health.items():
+                lines.append("Score breakdown (0–25 each):")
+                for key, value in primary.items():
                     lines.append(f"- {key.replace('_', ' ').title()}: {value}")
             if insights:
                 lines.append("Key insights:")
@@ -603,14 +612,15 @@ class FinancialIntelligenceEngine:
             return "\n".join(lines)
 
         # Default / situation snapshot — current statistics overview
-        score = summary.get("financial_health_score", 0)
+        score = context.get("health_score", summary.get("financial_health_score", 0))
+        status = context.get("health_status") or "n/a"
         lines = [
             f"Here’s your current financial situation for {period}:",
             f"- Income: {self._inr(summary.get('total_income', 0))}",
             f"- Expenses: {self._inr(summary.get('total_expenses', 0))}",
             f"- Remaining / savings: {self._inr(remaining)}",
             f"- Savings rate: {float(summary.get('savings_rate', 0) or 0):.1f}%",
-            f"- Health score: {score}/100",
+            f"- Health score: {score}/100 ({status})",
         ]
         if top_cats:
             top = top_cats[0]

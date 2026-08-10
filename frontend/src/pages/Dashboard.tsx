@@ -35,15 +35,11 @@ function greetingForNow() {
   return "Good Evening";
 }
 
-function healthLabel(score: number) {
-  if (score >= 75) return "GOOD";
-  if (score >= 55) return "FAIR";
-  return "NEEDS WORK";
-}
-
-function scoreTone(score: number) {
-  if (score >= 75) return "text-emerald-600";
-  if (score >= 55) return "text-amber-600";
+function scoreTone(status: string) {
+  const s = status.toLowerCase();
+  if (s === "excellent" || s === "good") return "text-emerald-600";
+  if (s === "fair") return "text-amber-600";
+  if (s === "no data") return "text-muted";
   return "text-rose-600";
 }
 
@@ -102,13 +98,13 @@ export default function Dashboard() {
 
   const healthBars = useMemo(() => {
     if (!data) return [];
-    const hb = data.health_breakdown || {};
-    const to100 = (v: number | undefined) => Math.round(((v ?? 0) / 20) * 100);
+    // Components are 0–25; show as 0–100 for the bars.
+    const to100 = (v: number | undefined) => Math.round(((v ?? 0) / 25) * 100);
     return [
-      { label: "Spending", score: to100(hb.spending_stability ?? hb.expense_ratio) },
-      { label: "Savings", score: to100(hb.savings_rate) },
-      { label: "Budget", score: to100(hb.budget_discipline) },
-      { label: "Goals", score: to100(hb.goal_progress) },
+      { label: "Spending", score: to100(data.spending_score) },
+      { label: "Savings", score: to100(data.savings_score) },
+      { label: "Budget", score: to100(data.budget_score) },
+      { label: "Goals", score: to100(data.goals_score) },
     ];
   }, [data]);
 
@@ -116,7 +112,19 @@ export default function Dashboard() {
     return <p className="text-muted">Loading dashboard…</p>;
   }
 
-  const score = Number(data.summary.financial_health_score || 0);
+  // Prefer explicit API health fields; fall back to summary only if missing.
+  const hasHealthData = data.health_has_data !== false && (
+    Number(data.summary.total_income) > 0
+    || Number(data.summary.total_expenses) > 0
+    || (data.budget_analytics?.length ?? 0) > 0
+    || (data.goal_progress?.length ?? 0) > 0
+  );
+  const score = hasHealthData
+    ? Number(data.health_score ?? data.summary.financial_health_score ?? 0)
+    : 0;
+  const healthStatus = hasHealthData
+    ? (data.health_status || "Fair")
+    : "No Data";
   const income = Number(data.summary.total_income || 0);
   const expenses = Number(data.summary.total_expenses || 0);
   const savings = Number(data.summary.net_savings || 0);
@@ -126,7 +134,7 @@ export default function Dashboard() {
   const canSpendSafely = safeToSpend > 0 && score >= 55;
 
   const gaugeData = [
-    { name: "score", value: Math.min(100, score) },
+    { name: "score", value: Math.min(100, Math.max(0, score)) },
     { name: "rest", value: Math.max(0, 100 - score) },
   ];
 
@@ -170,11 +178,13 @@ export default function Dashboard() {
   ].slice(0, 3);
 
   const positionLine =
-    score >= 75
-      ? "You're in a strong financial position."
-      : score >= 55
-        ? "You're on track — a few tweaks can strengthen your position."
-        : "Let's tighten spending and rebuild your financial cushion.";
+    !hasHealthData
+      ? "Add income or expenses to unlock your Financial Health Score."
+      : score >= 70
+        ? "You're in a strong financial position."
+        : score >= 50
+          ? "You're on track — a few tweaks can strengthen your position."
+          : "Let's tighten spending and rebuild your financial cushion.";
 
   const latestSuggestions =
     [...chatMessages].reverse().find((m) => m.role === "assistant")?.suggestedActions || AI_CHIPS;
@@ -194,7 +204,7 @@ export default function Dashboard() {
           <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="relative mx-auto h-36 w-36 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <PieChart key={`health-${score}-${healthStatus}`}>
                   <Pie
                     data={gaugeData}
                     dataKey="value"
@@ -203,16 +213,21 @@ export default function Dashboard() {
                     innerRadius={48}
                     outerRadius={64}
                     stroke="none"
+                    isAnimationActive={false}
                   >
-                    <Cell fill="#6366f1" />
+                    <Cell fill={hasHealthData ? "#6366f1" : "#cbd5e1"} />
                     <Cell fill="#e2e8f0" />
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
                 <div>
-                  <p className="text-xl font-bold text-ink">{Math.round(score)}/100</p>
-                  <p className={`text-xs font-bold ${scoreTone(score)}`}>{healthLabel(score)}</p>
+                  <p className="text-xl font-bold text-ink">
+                    {hasHealthData ? `${Math.round(score)}/100` : "—"}
+                  </p>
+                  <p className={`text-xs font-bold uppercase ${scoreTone(healthStatus)}`}>
+                    {healthStatus}
+                  </p>
                 </div>
               </div>
             </div>

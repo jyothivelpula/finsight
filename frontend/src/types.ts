@@ -111,6 +111,13 @@ export interface AnalyticsDashboard {
   goal_progress: GoalProgressItem[];
   insights: string[];
   health_breakdown: Record<string, number>;
+  health_score: number;
+  health_status: string;
+  spending_score: number;
+  savings_score: number;
+  budget_score: number;
+  goals_score: number;
+  health_has_data: boolean;
 }
 
 export interface AIChatResponse {

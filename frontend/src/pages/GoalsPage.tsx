@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Plus, Search, Trash2, X } from "lucide-react";
 import { financeApi } from "../api/finsight";
 import { StatusPill } from "../components/ui";
+import { emitDataChanged, onDataChanged } from "../lib/events";
 import { money } from "../lib/format";
 import type { Goal } from "../types";
 
@@ -25,6 +26,10 @@ export default function GoalsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => onDataChanged(() => {
+    load();
+  }), []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -68,6 +73,7 @@ export default function GoalsPage() {
       resetForm();
       setOpen(false);
       await load();
+      emitDataChanged({ kind: "transaction" });
     } finally {
       setSaving(false);
     }
@@ -84,6 +90,7 @@ export default function GoalsPage() {
     setAddOpen(null);
     setAddAmount("1000");
     await load();
+    emitDataChanged({ kind: "transaction" });
   };
 
   return (
@@ -198,7 +205,8 @@ export default function GoalsPage() {
                       className="rounded-lg p-2 text-muted transition hover:bg-danger/10 hover:text-danger"
                       onClick={async () => {
                         await financeApi.deleteGoal(g.id);
-                        load();
+                        await load();
+                        emitDataChanged({ kind: "transaction" });
                       }}
                     >
                       <Trash2 className="h-4 w-4" />

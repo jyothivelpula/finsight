@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Plus, Search, Trash2, X } from "lucide-react";
 import { financeApi } from "../api/finsight";
-import { onDataChanged } from "../lib/events";
+import { emitDataChanged, onDataChanged } from "../lib/events";
 import { currentYearMonth, money, todayISO } from "../lib/format";
 import type { Income } from "../types";
 
@@ -104,6 +104,7 @@ export default function IncomePage() {
       resetForm();
       setOpen(false);
       await load();
+      emitDataChanged({ kind: "income" });
     } finally {
       setSaving(false);
     }
@@ -205,7 +206,8 @@ export default function IncomePage() {
                         className="rounded-lg p-2 text-muted transition hover:bg-danger/10 hover:text-danger"
                         onClick={async () => {
                           await financeApi.deleteIncome(item.id);
-                          load();
+                          await load();
+                          emitDataChanged({ kind: "income" });
                         }}
                       >
                         <Trash2 className="h-4 w-4" />

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Plus, Search, Trash2, X } from "lucide-react";
 import { financeApi } from "../api/finsight";
 import { StatusPill } from "../components/ui";
-import { onDataChanged } from "../lib/events";
+import { emitDataChanged, onDataChanged } from "../lib/events";
 import { currentYearMonth, money, pct } from "../lib/format";
 import type { Budget, Category } from "../types";
 
@@ -77,6 +77,7 @@ export default function BudgetsPage() {
       setAmount("");
       setOpen(false);
       await load();
+      emitDataChanged({ kind: "transaction" });
     } finally {
       setSaving(false);
     }
@@ -190,7 +191,8 @@ export default function BudgetsPage() {
                       className="rounded-lg p-2 text-muted transition hover:bg-danger/10 hover:text-danger"
                       onClick={async () => {
                         await financeApi.deleteBudget(b.id);
-                        load();
+                        await load();
+                        emitDataChanged({ kind: "transaction" });
                       }}
                     >
                       <Trash2 className="h-4 w-4" />

@@ -20,6 +20,7 @@ from app.schemas.analytics import (
     CategoryAmount,
     FinancialSummary,
     GoalProgressItem,
+    HealthScoreDetails,
     MonthlyPoint,
 )
 
@@ -192,51 +193,102 @@ class AnalyticsEngine:
         points.reverse()
         return points
 
+    @staticmethod
+    def health_status_label(score: float, has_data: bool) -> str:
+        if not has_data:
+            return "No Data"
+        if score >= 85:
+            return "Excellent"
+        if score >= 70:
+            return "Good"
+        if score >= 50:
+            return "Fair"
+        return "Needs Attention"
+
     def financial_health_score(
         self,
         income: Decimal,
         expenses: Decimal,
         budget_items: list[BudgetAnalyticsItem],
         goals: list[GoalProgressItem],
-        trends: list[MonthlyPoint],
-    ) -> tuple[float, dict[str, float]]:
-        savings_rate = float((income - expenses) / income * 100) if income else 0.0
-        savings_points = max(0.0, min(20.0, savings_rate))  # 20% savings => full points
+        trends: list[MonthlyPoint] | None = None,
+    ) -> HealthScoreDetails:
+        """
+        Deterministic 0–100 health score from the selected period's user data.
 
+        Four equal components (max 25 each):
+          - spending_score: lower expense/income ratio → higher score
+          - savings_score: higher savings rate → higher score (full at 30%+)
+          - budget_score: share of budgets on track (neutral 12.5 if none set)
+          - goals_score: average goal completion (neutral 12.5 if none set)
+
+        health_score is exactly the sum of the four component scores.
+        `trends` is accepted for call-site compatibility but not used in the score.
+        """
+        _ = trends  # unused — score is period-based, not MoM volatility
+        income_f = float(income or 0)
+        expenses_f = float(expenses or 0)
+        has_data = bool(
+            income_f > 0
+            or expenses_f > 0
+            or budget_items
+            or goals
+        )
+
+        if not has_data:
+            return HealthScoreDetails(
+                health_score=0,
+                health_status="No Data",
+                spending_score=0,
+                savings_score=0,
+                budget_score=0,
+                goals_score=0,
+                has_data=False,
+            )
+
+        # Spending (0–25): 0% of income spent → 25; 100%+ → 0
+        if income_f > 0:
+            expense_ratio = min(expenses_f / income_f, 1.0)
+        else:
+            expense_ratio = 1.0 if expenses_f > 0 else 0.0
+        spending_score = round(max(0.0, min(25.0, 25.0 * (1.0 - expense_ratio))), 2)
+
+        # Savings (0–25): full credit at 30%+ savings rate
+        if income_f > 0:
+            savings_rate = ((income_f - expenses_f) / income_f) * 100.0
+        else:
+            savings_rate = 0.0
+        savings_score = round(max(0.0, min(25.0, savings_rate * (25.0 / 30.0))), 2)
+
+        # Budget (0–25)
         if budget_items:
             on_track = sum(1 for b in budget_items if b.status == "on_track")
-            budget_points = (on_track / len(budget_items)) * 20
+            budget_score = round((on_track / len(budget_items)) * 25.0, 2)
         else:
-            budget_points = 10.0
+            budget_score = 12.5
 
-        expense_ratio = float(expenses / income * 100) if income else 100.0
-        expense_points = max(0.0, min(20.0, 20 - (expense_ratio - 70) * 0.5))
-
+        # Goals (0–25)
         if goals:
             avg_goal = sum(g.completion_percentage for g in goals) / len(goals)
-            goal_points = (avg_goal / 100) * 20
+            goals_score = round(max(0.0, min(25.0, (avg_goal / 100.0) * 25.0)), 2)
         else:
-            goal_points = 10.0
+            goals_score = 12.5
 
-        if len(trends) >= 2:
-            deltas = [
-                abs(float(trends[i].expenses - trends[i - 1].expenses))
-                for i in range(1, len(trends))
-            ]
-            avg_delta = sum(deltas) / len(deltas) if deltas else 0
-            stability_points = max(0.0, min(20.0, 20 - avg_delta / 1000))
-        else:
-            stability_points = 10.0
+        health_score = round(
+            spending_score + savings_score + budget_score + goals_score,
+            2,
+        )
+        health_score = max(0.0, min(100.0, health_score))
 
-        breakdown = {
-            "savings_rate": round(savings_points, 2),
-            "budget_discipline": round(budget_points, 2),
-            "expense_ratio": round(expense_points, 2),
-            "goal_progress": round(goal_points, 2),
-            "spending_stability": round(stability_points, 2),
-        }
-        total = round(sum(breakdown.values()), 2)
-        return total, breakdown
+        return HealthScoreDetails(
+            health_score=health_score,
+            health_status=self.health_status_label(health_score, True),
+            spending_score=spending_score,
+            savings_score=savings_score,
+            budget_score=budget_score,
+            goals_score=goals_score,
+            has_data=True,
+        )
 
     def generate_insights(
         self,
@@ -325,7 +377,7 @@ class AnalyticsEngine:
         income_sources = self.income_by_source(start, end)
         goals = self.goal_progress()
         trends = self.monthly_trends()
-        score, breakdown = self.financial_health_score(
+        health = self.financial_health_score(
             income, expenses, budget_items, goals, trends
         )
         insights = self.generate_insights(
@@ -338,8 +390,21 @@ class AnalyticsEngine:
             net_savings=net,
             savings_rate=round(savings_rate, 2),
             budget_usage=round(budget_usage, 2),
-            financial_health_score=score,
+            financial_health_score=health.health_score,
         )
+
+        # Component scores on 0–25 scale; keep legacy keys for older UI/AI readers
+        breakdown = {
+            "spending_score": health.spending_score,
+            "savings_score": health.savings_score,
+            "budget_score": health.budget_score,
+            "goals_score": health.goals_score,
+            # legacy aliases (same values)
+            "expense_ratio": health.spending_score,
+            "savings_rate": health.savings_score,
+            "budget_discipline": health.budget_score,
+            "goal_progress": health.goals_score,
+        }
 
         return AnalyticsDashboard(
             summary=summary,
@@ -350,6 +415,13 @@ class AnalyticsEngine:
             goal_progress=goals,
             insights=insights,
             health_breakdown=breakdown,
+            health_score=health.health_score,
+            health_status=health.health_status,
+            spending_score=health.spending_score,
+            savings_score=health.savings_score,
+            budget_score=health.budget_score,
+            goals_score=health.goals_score,
+            health_has_data=health.has_data,
         )
 
     def build_context_summary(self, year: int | None = None, month: int | None = None) -> dict:
@@ -386,4 +458,11 @@ class AnalyticsEngine:
             "goal_progress": [g.model_dump(mode="json") for g in dashboard.goal_progress[:5]],
             "insights": dashboard.insights,
             "health_breakdown": dashboard.health_breakdown,
+            "health_score": dashboard.health_score,
+            "health_status": dashboard.health_status,
+            "spending_score": dashboard.spending_score,
+            "savings_score": dashboard.savings_score,
+            "budget_score": dashboard.budget_score,
+            "goals_score": dashboard.goals_score,
+            "health_has_data": dashboard.health_has_data,
         }

@@ -57,7 +57,14 @@ export default function AnalyticsPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Stat label="Net Savings" value={money(data.summary.net_savings)} />
         <Stat label="Savings Rate" value={pct(data.summary.savings_rate)} />
-        <Stat label="Health Score" value={`${data.summary.financial_health_score}/100`} />
+        <Stat
+          label="Health Score"
+          value={
+            data.health_has_data === false
+              ? "No Data"
+              : `${Math.round(Number(data.health_score ?? data.summary.financial_health_score))}/100`
+          }
+        />
       </div>
 
       <div className="mt-6 grid gap-4 xl:grid-cols-2">
@@ -127,14 +134,24 @@ export default function AnalyticsPage() {
         <Panel>
           <h2 className="text-2xl font-semibold tracking-tight text-ink">Health Score Breakdown</h2>
           <ul className="mt-4 space-y-3">
-            {Object.entries(data.health_breakdown).map(([key, value]) => (
+            {(
+              [
+                ["spending_score", data.spending_score],
+                ["savings_score", data.savings_score],
+                ["budget_score", data.budget_score],
+                ["goals_score", data.goals_score],
+              ] as const
+            ).map(([key, value]) => (
               <li key={key}>
                 <div className="mb-1 flex justify-between text-sm">
                   <span className="capitalize">{key.replaceAll("_", " ")}</span>
-                  <span>{value}/20</span>
+                  <span>{Number(value ?? 0).toFixed(1)}/25</span>
                 </div>
                 <div className="h-2 rounded-full bg-stone/50">
-                  <div className="h-2 rounded-full bg-moss" style={{ width: `${(value / 20) * 100}%` }} />
+                  <div
+                    className="h-2 rounded-full bg-moss"
+                    style={{ width: `${(Number(value ?? 0) / 25) * 100}%` }}
+                  />
                 </div>
               </li>
             ))}

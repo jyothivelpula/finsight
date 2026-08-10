@@ -61,7 +61,11 @@ export const financeApi = {
 export const analyticsApi = {
   dashboard: (year?: number, month?: number) =>
     api
-      .get<AnalyticsDashboard>("/api/analytics/dashboard", { params: { year, month } })
+      .get<AnalyticsDashboard>("/api/analytics/dashboard", {
+        // Bust any intermediary/browser GET cache so health score always refetches
+        params: { year, month, _ts: Date.now() },
+        headers: { "Cache-Control": "no-cache" },
+      })
       .then((r) => r.data),
 };
 

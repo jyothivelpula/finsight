@@ -125,14 +125,16 @@ def format_pct(value: float | int) -> str:
     return f"{float(value):.2f}%"
 
 
-def health_rating(score: float) -> tuple[str, Color]:
-    if score >= 85:
-        return "Excellent", GREEN
-    if score >= 70:
-        return "Good", GREEN
-    if score >= 50:
-        return "Fair", AMBER
-    return "Needs Attention", RED
+def health_status_color(status: str) -> Color:
+    """Map AnalyticsEngine.health_status to a PDF color (no score recalculation)."""
+    s = (status or "").lower()
+    if s in {"excellent", "good"}:
+        return GREEN
+    if s == "fair":
+        return AMBER
+    if s == "no data":
+        return MUTED
+    return RED
 
 
 def budget_status_label(item) -> tuple[str, Color]:
@@ -469,8 +471,11 @@ class _PremiumPdfBuilder:
     def _draw_snapshot_cards(self) -> None:
         self._section("Financial Snapshot", "Key metrics for the selected month")
         s = self.dashboard.summary
-        score = float(s.financial_health_score)
-        rating, score_color = health_rating(score)
+        # Same fields as Dashboard API — never recompute health here.
+        score = float(getattr(self.dashboard, "health_score", None) or s.financial_health_score or 0)
+        status = getattr(self.dashboard, "health_status", None) or "No Data"
+        score_color = health_status_color(status)
+        has_data = bool(getattr(self.dashboard, "health_has_data", True))
 
         cards = [
             ("Total Income", format_inr(s.total_income), None, GREEN, GREEN_SOFT),
@@ -482,7 +487,13 @@ class _PremiumPdfBuilder:
                 GREEN if float(s.net_savings) >= 0 else RED,
                 GREEN_SOFT if float(s.net_savings) >= 0 else RED_SOFT,
             ),
-            ("Health Score", f"{score:.0f}/100", rating, score_color, INDIGO_SOFT),
+            (
+                "Health Score",
+                f"{score:.0f}/100" if has_data else "—",
+                status if has_data else "No Data",
+                score_color,
+                INDIGO_SOFT,
+            ),
         ]
 
         gap = 10
@@ -527,8 +538,8 @@ class _PremiumPdfBuilder:
         expenses = float(s.total_expenses)
         net = float(s.net_savings)
         rate = float(s.savings_rate)
-        score = float(s.financial_health_score)
-        rating, _ = health_rating(score)
+        score = float(getattr(self.dashboard, "health_score", None) or s.financial_health_score or 0)
+        status = getattr(self.dashboard, "health_status", None) or "No Data"
 
         top = None
         if self.dashboard.expense_by_category:
@@ -542,7 +553,7 @@ class _PremiumPdfBuilder:
             parts.append(
                 f"Largest spend was {top.category} at {format_inr(top.amount)} ({format_pct(top.percentage)} of expenses)."
             )
-        parts.append(f"Your Financial Health Score is {score:.0f}/100 ({rating}).")
+        parts.append(f"Your Financial Health Score is {score:.0f}/100 ({status}).")
         if income > 0 and net < 0:
             parts.append("Expenses exceeded income this month — prioritize high-spend categories next period.")
         elif rate >= 20:
@@ -593,10 +604,17 @@ class _PremiumPdfBuilder:
 
     def _draw_health_section(self) -> None:
         self._section("Financial Health Score")
-        s = self.dashboard.summary
-        score = float(s.financial_health_score)
-        rating, accent = health_rating(score)
-        breakdown = self.dashboard.health_breakdown or {}
+        d = self.dashboard
+        score = float(getattr(d, "health_score", None) or d.summary.financial_health_score or 0)
+        status = getattr(d, "health_status", None) or "No Data"
+        accent = health_status_color(status)
+        # Prefer explicit dashboard fields (same as API/Dashboard UI)
+        components = [
+            ("Spending", float(getattr(d, "spending_score", 0) or 0)),
+            ("Savings", float(getattr(d, "savings_score", 0) or 0)),
+            ("Budget", float(getattr(d, "budget_score", 0) or 0)),
+            ("Goals", float(getattr(d, "goals_score", 0) or 0)),
+        ]
         box_h = 96
         self._ensure(box_h + 6)
         yb = self.y - box_h
@@ -622,40 +640,34 @@ class _PremiumPdfBuilder:
         self.c.drawString(self.MARGIN + 108, yb + box_h - 28, f"{score:.2f} / 100")
         self._font(True, 10)
         self.c.setFillColor(accent)
-        self.c.drawString(self.MARGIN + 108, yb + box_h - 44, rating)
+        self.c.drawString(self.MARGIN + 108, yb + box_h - 44, status)
 
-        # Component indicators
-        labels = [
-            ("savings_rate", "Savings"),
-            ("budget_discipline", "Budget"),
-            ("expense_ratio", "Expenses"),
-            ("goal_progress", "Goals"),
-            ("spending_stability", "Stability"),
-        ]
+        # Component bars use the same 0–100 display scale as the Dashboard UI
         chip_w = 72
         bx = self.MARGIN + 108
         by = yb + 14
-        shown = 0
-        for key, title in labels:
-            if key not in breakdown:
-                continue
-            val = float(breakdown[key])
-            # Components are scored out of ~20 in the engine
-            pct = min(100.0, (val / 20.0) * 100.0)
-            x = bx + shown * (chip_w + 8)
+        for i, (title, raw_0_25) in enumerate(components):
+            display_0_100 = round((raw_0_25 / 25.0) * 100) if raw_0_25 else 0
+            x = bx + i * (chip_w + 8)
             self._card(x, by, chip_w, 36, fill=LIGHT, stroke=BORDER, radius=6)
             self._font(False, 7)
             self.c.setFillColor(MUTED)
             self.c.drawString(x + 6, by + 24, title)
             self._font(True, 9)
             self.c.setFillColor(NAVY)
-            self.c.drawString(x + 6, by + 12, f"{val:.0f}")
-            # mini bar
+            self.c.drawString(x + 6, by + 12, f"{display_0_100}")
             self.c.setFillColor(BORDER)
             self.c.roundRect(x + 6, by + 4, chip_w - 12, 3, 1, fill=1, stroke=0)
             self.c.setFillColor(INDIGO)
-            self.c.roundRect(x + 6, by + 4, max(2, (chip_w - 12) * pct / 100), 3, 1, fill=1, stroke=0)
-            shown += 1
+            self.c.roundRect(
+                x + 6,
+                by + 4,
+                max(2, (chip_w - 12) * min(display_0_100, 100) / 100),
+                3,
+                1,
+                fill=1,
+                stroke=0,
+            )
 
         self.y = yb - 14
 
@@ -705,9 +717,9 @@ class _PremiumPdfBuilder:
         elif self.dashboard.budget_analytics:
             items.append(("positive", "All tracked budgets are currently on track."))
 
-        score = float(s.financial_health_score)
-        rating, _ = health_rating(score)
-        items.append(("recommendation", f"Health rating: {rating} ({score:.0f}/100)."))
+        score = float(getattr(self.dashboard, "health_score", None) or s.financial_health_score or 0)
+        status = getattr(self.dashboard, "health_status", None) or "No Data"
+        items.append(("recommendation", f"Health rating: {status} ({score:.0f}/100)."))
         return items[:5]
 
     # ── page 2 ───────────────────────────────────────────────────────────
@@ -951,7 +963,8 @@ class _PremiumPdfBuilder:
                 tips.append(f"Target ~{format_inr(gap)} more savings to reach a 20% rate.")
         else:
             tips.append("Keep your savings habit — automate a transfer on payday if possible.")
-        if float(s.financial_health_score) < 70:
+        score = float(getattr(self.dashboard, "health_score", None) or s.financial_health_score or 0)
+        if score < 70:
             tips.append("Improve health score by reducing top discretionary categories and staying under budget.")
         return tips[:4] or ["Continue tracking income and expenses for clearer trends next month."]
 
