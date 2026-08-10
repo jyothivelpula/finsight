@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   Activity,
   ArrowDownCircle,
@@ -26,15 +26,14 @@ import { currentYearMonth } from "../lib/format";
 
 type NavItem = {
   to: string;
-  end?: boolean;
   label: string;
   icon: typeof LayoutDashboard;
   iconClass: string;
 };
 
 const primaryLinks: NavItem[] = [
-  { to: "/app", end: true, label: "Dashboard", icon: LayoutDashboard, iconClass: "text-moss" },
-  { to: "/app/expenses", label: "Transactions", icon: ArrowLeftRight, iconClass: "text-slate-500" },
+  { to: "/app", label: "Dashboard", icon: LayoutDashboard, iconClass: "text-moss" },
+  { to: "/app/transactions", label: "Transactions", icon: ArrowLeftRight, iconClass: "text-slate-500" },
 ];
 
 const manageLinks: NavItem[] = [
@@ -52,25 +51,24 @@ const insightLinks: NavItem[] = [
 
 function NavRow({ item }: { item: NavItem }) {
   const Icon = item.icon;
+  const { pathname } = useLocation();
+  // Exact path match only — avoids shared/prefix false actives (e.g. Transactions vs Expenses).
+  const active = pathname === item.to;
 
   return (
     <NavLink
       to={item.to}
-      end={item.end}
-      className={({ isActive }) =>
+      end
+      className={() =>
         `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-          isActive
+          active
             ? "bg-moss text-white shadow-sm shadow-moss/25"
             : "text-slate-600 hover:bg-sand hover:text-ink"
         }`
       }
     >
-      {({ isActive }) => (
-        <>
-          <Icon className={`h-4 w-4 ${isActive ? "text-white" : item.iconClass}`} />
-          {item.label}
-        </>
-      )}
+      <Icon className={`h-4 w-4 ${active ? "text-white" : item.iconClass}`} />
+      {item.label}
     </NavLink>
   );
 }

@@ -14,6 +14,7 @@ import HelpPage from "./pages/HelpPage";
 import Landing from "./pages/Landing";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
+import TransactionsPage from "./pages/TransactionsPage";
 import { bootstrapAuth } from "./store/authSlice";
 import { useAppDispatch } from "./store";
 
@@ -33,6 +34,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Dashboard />} />
+            <Route path="transactions" element={<TransactionsPage />} />
             <Route path="income" element={<IncomePage />} />
             <Route path="expenses" element={<ExpensesPage />} />
             <Route path="budgets" element={<BudgetsPage />} />
