@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Download, ReceiptText, Search } from "lucide-react";
 import { financeApi } from "../api/finsight";
 import { onDataChanged } from "../lib/events";
 import { currentYearMonth, money } from "../lib/format";
@@ -96,6 +96,21 @@ export default function TransactionsPage() {
     [monthRows],
   );
 
+  const exportTransactions = () => {
+    const escape = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
+    const csv = [
+      ["Date", "Type", "Category or source", "Details", "Amount"],
+      ...filtered.map((row) => [row.date, row.kind, row.label, row.details, row.amount]),
+    ].map((row) => row.map(escape).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `finsight-transactions-${year}-${String(month).padStart(2, "0")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -108,23 +123,26 @@ export default function TransactionsPage() {
             <Link to="/app/expenses" className="font-semibold text-moss hover:underline">Expenses</Link>.
           </p>
         </div>
+        <button type="button" onClick={exportTransactions} disabled={!filtered.length} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-line bg-card px-4 py-2.5 text-sm font-bold text-ink transition hover:border-moss/40 hover:text-moss disabled:cursor-not-allowed disabled:opacity-45">
+          <Download className="h-4 w-4" /> Export CSV
+        </button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-line bg-card px-5 py-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+        <div className="card-shadow surface-hover rounded-2xl border border-line bg-card px-5 py-5">
+          <div className="flex items-center justify-between"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
             {MONTH_LABELS[month - 1]} {year} Income
-          </p>
+          </p><span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-600"><ArrowUpRight className="h-4 w-4" /></span></div>
           <p className="mt-3 text-3xl font-semibold tracking-tight text-emerald-600">{money(monthIncome)}</p>
         </div>
-        <div className="rounded-2xl border border-line bg-card px-5 py-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+        <div className="card-shadow surface-hover rounded-2xl border border-line bg-card px-5 py-5">
+          <div className="flex items-center justify-between"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
             {MONTH_LABELS[month - 1]} {year} Expenses
-          </p>
+          </p><span className="grid h-9 w-9 place-items-center rounded-xl bg-rose-50 text-rose-600"><ArrowDownRight className="h-4 w-4" /></span></div>
           <p className="mt-3 text-3xl font-semibold tracking-tight text-danger">{money(monthExpense)}</p>
         </div>
-        <div className="rounded-2xl border border-line bg-card px-5 py-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Records</p>
+        <div className="card-shadow surface-hover rounded-2xl border border-line bg-card px-5 py-5">
+          <div className="flex items-center justify-between"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Records</p><span className="grid h-9 w-9 place-items-center rounded-xl bg-soft text-moss"><ReceiptText className="h-4 w-4" /></span></div>
           <p className="mt-3 text-3xl font-semibold tracking-tight text-ink">{rows.length}</p>
         </div>
       </div>
@@ -150,7 +168,7 @@ export default function TransactionsPage() {
         </select>
       </div>
 
-      <div className="mt-5 min-h-[320px] rounded-2xl border border-line bg-card">
+      <div className="card-shadow mt-5 min-h-[320px] overflow-hidden rounded-2xl border border-line bg-card">
         {filtered.length === 0 ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center px-6 py-16 text-center">
             <p className="text-xl font-semibold text-ink">No transactions yet</p>
@@ -172,7 +190,7 @@ export default function TransactionsPage() {
               </thead>
               <tbody>
                 {filtered.map((row) => (
-                  <tr key={row.id} className="border-b border-line/70 last:border-0">
+                  <tr key={row.id} className="border-b border-line/70 transition-colors last:border-0 hover:bg-sand/70">
                     <td className="px-5 py-4 text-muted">{row.date}</td>
                     <td className="px-5 py-4">
                       <span

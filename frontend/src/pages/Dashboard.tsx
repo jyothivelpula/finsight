@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   Cell,
+  CartesianGrid,
   Line,
   LineChart,
   Pie,
@@ -138,12 +139,23 @@ export default function Dashboard() {
     { name: "rest", value: Math.max(0, 100 - score) },
   ];
 
-  const trend = data.monthly_trends.slice(-6).map((p) => ({
+  const reportedTrend = data.monthly_trends.slice(-6).map((p) => ({
     period: p.period.slice(5),
     income: Number(p.income),
     expenses: Number(p.expenses),
     savings: Number(p.savings),
   }));
+  const trend = reportedTrend.length
+    ? reportedTrend
+    : Array.from({ length: 5 }, (_, index) => {
+        const date = new Date(year, month - 5 + index, 1);
+        return {
+          period: date.toLocaleString("en-IN", { month: "2-digit" }),
+          income: 0,
+          expenses: 0,
+          savings: 0,
+        };
+      });
 
   const attentionItems = [
     ...data.insights.slice(0, 2).map((insight, i) => ({
@@ -191,11 +203,21 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl text-ink md:text-4xl">
-          {greetingForNow()}, {firstName}! 👋
-        </h1>
-        <p className="mt-1 text-sm text-muted">{positionLine}</p>
+      <div className="relative overflow-hidden rounded-3xl border border-[#3a302d] bg-gradient-to-br from-[#29262a] via-[#24252b] to-[#35241f] px-5 py-6 card-shadow md:px-7">
+        <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-orange-400/10 blur-3xl" />
+        <div className="relative flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-moss">Financial overview</p>
+            <h1 className="mt-2 font-display text-3xl text-ink md:text-4xl">
+              {greetingForNow()}, {firstName}!
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted">{positionLine}</p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Link to="/app/analytics" className="rounded-xl border border-line bg-sand px-3 py-2 text-xs font-bold text-moss transition hover:border-moss/30 hover:bg-soft">View insights</Link>
+            <Link to="/app/goals" className="rounded-xl bg-moss px-3 py-2 text-xs font-bold text-white transition hover:bg-leaf">Your goals</Link>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
@@ -304,21 +326,20 @@ export default function Dashboard() {
               <p className="mt-1 text-lg font-bold text-blue-600">{moneyCompact(savings)}</p>
             </div>
           </div>
-          <div className="mt-4 h-40">
-            {trend.length ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trend}>
-                  <XAxis dataKey="period" stroke="#94a3b8" fontSize={11} />
-                  <YAxis hide />
-                  <Tooltip formatter={(v) => money(Number(v))} />
-                  <Line type="monotone" dataKey="income" stroke="#22c55e" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="savings" stroke="#6366f1" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyState title="No trend yet" body="Add a few months of data to see the timeline." />
-            )}
+          <div className="mt-5 h-48 rounded-xl bg-[#1c1d22] px-1 pt-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trend} margin={{ top: 12, right: 8, left: 8, bottom: 8 }}>
+                <CartesianGrid vertical={false} stroke="#303138" strokeDasharray="3 4" />
+                <XAxis dataKey="period" stroke="#9b9ca4" tickLine={{ stroke: "#8d8fff" }} axisLine={{ stroke: "#8d8fff", strokeWidth: 2 }} tick={{ fill: "#9b9ca4", fontSize: 11 }} />
+                <YAxis hide domain={reportedTrend.length ? ["auto", "auto"] : [-1, 1]} />
+                {reportedTrend.length ? <Tooltip contentStyle={{ background: "#292a30", border: "1px solid #44454c", borderRadius: 12, color: "#f4f4f5" }} labelStyle={{ color: "#a0a1a8" }} formatter={(v) => money(Number(v))} /> : null}
+                {reportedTrend.length ? <>
+                  <Line type="monotone" dataKey="income" name="Income" stroke="#00c48c" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#00c48c" }} />
+                  <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#ff0058" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#ff0058" }} />
+                  <Line type="monotone" dataKey="savings" name="Savings" stroke="#2777ff" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#2777ff" }} />
+                </> : null}
+              </LineChart>
+            </ResponsiveContainer>
           </div>
           <Link to="/app/analytics" className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-moss">
             View interactive timeline <ArrowRight className="h-3.5 w-3.5" />

@@ -64,7 +64,7 @@ export default function Auth() {
             type="button"
             onClick={() => switchMode("signin")}
             className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-              !isRegister ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
+              !isRegister ? "bg-moss text-white shadow-lg shadow-moss/20" : "text-muted hover:text-white"
             }`}
           >
             Sign in
@@ -73,7 +73,7 @@ export default function Auth() {
             type="button"
             onClick={() => switchMode("register")}
             className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-              isRegister ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
+              isRegister ? "bg-moss text-white shadow-lg shadow-moss/20" : "text-muted hover:text-white"
             }`}
           >
             Create account
@@ -88,7 +88,7 @@ export default function Auth() {
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
+                className="w-full rounded-xl border border-transparent bg-[#eef3ff] px-3.5 py-3 text-sm text-[#171819] outline-none transition placeholder:text-slate-500 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
                 placeholder="Your name"
               />
             </label>
@@ -101,7 +101,7 @@ export default function Auth() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
+              className="w-full rounded-xl border border-transparent bg-[#eef3ff] px-3.5 py-3 text-sm text-[#171819] outline-none transition placeholder:text-slate-500 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
               placeholder="you@email.com"
             />
           </label>
@@ -114,7 +114,7 @@ export default function Auth() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
+              className="w-full rounded-xl border border-transparent bg-[#eef3ff] px-3.5 py-3 text-sm text-[#171819] outline-none transition placeholder:text-slate-500 focus:border-moss/60 focus:ring-2 focus:ring-moss/20"
               placeholder="••••••••"
             />
           </label>

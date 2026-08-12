@@ -18,6 +18,7 @@ import {
   Wallet,
 } from "lucide-react";
 import AddTransactionModal from "./AddTransactionModal";
+import CommandPalette from "./CommandPalette";
 import BrandLogo from "./BrandLogo";
 import Toast, { type ToastState } from "./Toast";
 import { logout } from "../store/authSlice";
@@ -60,14 +61,14 @@ function NavRow({ item }: { item: NavItem }) {
       to={item.to}
       end
       className={() =>
-        `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+        `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
           active
-            ? "bg-moss text-white shadow-sm shadow-moss/25"
-            : "text-slate-600 hover:bg-sand hover:text-ink"
+            ? "bg-[#39251e] text-[#ff8a52] shadow-lg shadow-black/10"
+            : "text-slate-300 hover:bg-white/8 hover:text-white"
         }`
       }
     >
-      <Icon className={`h-4 w-4 ${active ? "text-white" : item.iconClass}`} />
+      <Icon className={`h-4 w-4 ${active ? "text-white" : "text-slate-400 group-hover:text-white"}`} />
       {item.label}
     </NavLink>
   );
@@ -91,6 +92,7 @@ export default function AppLayout() {
       .toUpperCase() || "U";
 
   const [txOpen, setTxOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
@@ -99,12 +101,23 @@ export default function AppLayout() {
     return () => window.clearTimeout(id);
   }, [toast]);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
-    <div className="app-bg min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="w-full border-b border-line bg-white lg:sticky lg:top-0 lg:h-screen lg:w-[260px] lg:overflow-y-auto lg:border-b-0 lg:border-r">
-        <div className="px-5 pb-2 pt-5">
+    <div className="app-bg min-h-screen lg:grid lg:grid-cols-[276px_1fr]">
+      <aside className="w-full border-b border-[#292a2f] bg-[#171819] text-white lg:sticky lg:top-0 lg:h-screen lg:w-[276px] lg:overflow-y-auto lg:border-b-0 lg:border-r">
+        <div className="px-5 pb-3 pt-6">
           <BrandLogo imgClassName="h-9 w-auto max-w-[170px]" />
-          <p className="mt-1 text-[11px] font-medium text-muted">Your Financial OS</p>
+          <p className="mt-1 text-[11px] font-medium tracking-wide text-slate-400">YOUR FINANCIAL OS</p>
         </div>
 
         <nav className="flex flex-col gap-5 px-3 py-3">
@@ -115,7 +128,7 @@ export default function AppLayout() {
           </div>
 
           <div className="flex flex-col gap-0.5">
-            <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
               Manage Money
             </p>
             {manageLinks.map((item) => (
@@ -124,7 +137,7 @@ export default function AppLayout() {
           </div>
 
           <div className="flex flex-col gap-0.5">
-            <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
               Insights
             </p>
             {insightLinks.map((item) => (
@@ -132,7 +145,7 @@ export default function AppLayout() {
             ))}
           </div>
 
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 border-t border-slate-800 pt-4">
             <NavRow
               item={{
                 to: "/app/settings",
@@ -152,16 +165,21 @@ export default function AppLayout() {
             <button
               type="button"
               onClick={() => dispatch(logout())}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-500 hover:bg-rose-50"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-300 transition hover:bg-rose-400/10 hover:text-rose-200"
             >
               <LogOut className="h-4 w-4" /> Sign Out
             </button>
           </div>
         </nav>
+        <div className="mx-4 mb-5 hidden rounded-2xl border border-orange-400/15 bg-gradient-to-br from-[#a94d29] via-[#d85232] to-[#9826a5] p-4 lg:block">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white"><Sparkles className="h-4 w-4 text-orange-100" /> Smart money review</div>
+          <p className="mt-2 text-xs leading-relaxed text-slate-400">Get a practical read on your month with FinSight AI.</p>
+          <NavLink to="/app/ai" className="mt-3 inline-flex text-xs font-bold text-white hover:text-orange-100">Open AI Coach →</NavLink>
+        </div>
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-white/90 px-4 py-3 backdrop-blur md:px-7">
+        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-[#171819]/90 px-4 py-3.5 backdrop-blur-xl md:px-8">
           <div className="hidden sm:block">
             <p className="text-sm text-muted">Welcome back,</p>
             <p className="font-semibold text-ink">{firstName}</p>
@@ -174,19 +192,19 @@ export default function AppLayout() {
             <button
               type="button"
               onClick={() => setTxOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-moss/25"
+              className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-moss/20 transition hover:-translate-y-0.5 hover:bg-leaf"
             >
               <Plus className="h-4 w-4" /> Add Transaction
             </button>
             <button
               type="button"
-              className="relative grid h-10 w-10 place-items-center rounded-xl border border-line bg-white text-muted hover:text-ink"
+              className="relative grid h-10 w-10 place-items-center rounded-xl border border-line bg-card text-muted hover:text-ink"
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-danger" />
             </button>
-            <div className="flex items-center gap-2 rounded-xl border border-line bg-white px-2.5 py-1.5">
+            <div className="flex items-center gap-2 rounded-xl border border-line bg-card px-2.5 py-1.5">
               <div className="grid h-9 w-9 place-items-center rounded-full bg-soft text-sm font-bold text-moss">
                 {initials}
               </div>
@@ -197,7 +215,7 @@ export default function AppLayout() {
           </div>
         </header>
 
-        <main className="px-4 py-5 md:px-7 md:py-6">
+        <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8 md:py-8">
           <Outlet />
         </main>
       </div>
@@ -207,6 +225,7 @@ export default function AppLayout() {
         onClose={() => setTxOpen(false)}
         onSuccess={(message) => setToast({ message, tone: "success" })}
       />
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} onAddTransaction={() => setTxOpen(true)} />
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );

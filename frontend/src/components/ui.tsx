@@ -28,7 +28,7 @@ export function PageHeader({
 
 export function Panel({ children, className = "" }: PropsWithChildren<{ className?: string }>) {
   return (
-    <section className={`card-shadow rounded-2xl border border-line bg-card p-5 ${className}`}>
+    <section className={`card-shadow surface-hover rounded-2xl border border-line bg-card p-5 ${className}`}>
       {children}
     </section>
   );
