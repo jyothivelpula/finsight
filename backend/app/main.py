@@ -16,12 +16,14 @@ from app.models import (  # noqa: F401 — register models on Base.metadata
     SavingsGoal,
     User,
 )
+from app.services.notifications import ensure_notification_schema
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Path(settings.REPORTS_DIR).mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(bind=engine)
+    ensure_notification_schema(engine)
     yield
 
 
@@ -33,12 +35,13 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # In development, allow any localhost Vite port (5173/5174/5175...).
+    # Explicit origins from CORS_ORIGINS, plus regex for local + all Vercel URLs.
+    # Vercel creates a new *.vercel.app host per deployment — listing each one in
+    # env vars is brittle, so production always allows https://*.vercel.app.
     cors_origins = settings.cors_origins_list
     allow_origin_regex = (
         r"http://(localhost|127\.0\.0\.1):\d+"
-        if settings.APP_ENV == "development"
-        else None
+        r"|https://([a-z0-9-]+\.)*vercel\.app"
     )
     app.add_middleware(
         CORSMiddleware,
